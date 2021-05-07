@@ -27,11 +27,11 @@ public class AmazonS3ClientServiceImpl implements AmazonS3ClientService {
     private static final Logger logger = LoggerFactory.getLogger(AmazonS3ClientServiceImpl.class);
 
     @Autowired
-    public AmazonS3ClientServiceImpl(String awsRegion, AWSCredentialsProvider awsCredentials, String awsS3Bucket) {
+    public AmazonS3ClientServiceImpl(String awsRegion, AWSCredentialsProvider awsCredentialsProvider, String awsS3Bucket) {
         this.awsS3Bucket = awsS3Bucket;
 
         this.amazonS3 = AmazonS3ClientBuilder.standard()
-                .withCredentials(awsCredentials)
+                .withCredentials(awsCredentialsProvider)
                 .withRegion(awsRegion).build();
     }
 
