@@ -16,7 +16,6 @@ public class HiveClientServiceImpl {
     }
 
     public void getDataFromHive() {
-        spark.sql("USE projet_big_data");
         spark.sql("SELECT * FROM label LIMIT 100").show();
     }
 }
