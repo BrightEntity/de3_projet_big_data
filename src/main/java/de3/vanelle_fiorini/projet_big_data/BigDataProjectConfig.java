@@ -9,25 +9,19 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.mongodb.ConnectionString;
-import com.mongodb.MongoClientSettings;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClientFactory;
-import com.mongodb.client.MongoClients;
 import de3.vanelle_fiorini.projet_big_data.service.impl.AmazonS3ClientServiceImpl;
 import de3.vanelle_fiorini.projet_big_data.service.impl.HiveClientServiceImpl;
-import de3.vanelle_fiorini.projet_big_data.service.impl.MongoDBClientServiceImpl;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
 import org.apache.tomcat.util.http.fileupload.disk.DiskFileItem;
 import org.apache.tomcat.util.http.fileupload.disk.DiskFileItemFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import javax.sql.DataSource;
 
 @Configuration
 public class BigDataProjectConfig {
@@ -61,39 +55,7 @@ public class BigDataProjectConfig {
     @Value("${cloud.aws.s3.audio.bucket}")
     private String awsS3Bucket;
 
-    @Value("${spring.data.mongodb.host}")
-    private String mongoDBHost;
-
-    @Value("${spring.data.mongodb.username}")
-    private String mongoDBUsername;
-
-    @Value("${spring.data.mongodb.password}")
-    private String mongoDBPassword;
-
-    @Bean(name = "mongoDBUsername")
-    public String getMongoDBUsername() {
-        return mongoDBUsername;
-    }
-    @Bean(name = "mongoDBPassword")
-    public String getMongoDBPassword() {
-        return mongoDBPassword;
-    }
-    @Bean(name = "mongoDBDatabase")
-    public String getMongoDBDatabase() {
-        return mongoDBDatabase;
-    }
-
-    @Value("${spring.data.mongodb.database}")
-    private String mongoDBDatabase;
-
     private HiveCollector hiveCollector;
-
-    @Bean
-    public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
-        return args -> {
-            System.out.println("Hello world");
-        };
-    }
 
     @Bean(name = "awsKeyId")
     public String getAWSKeyId() {
@@ -113,17 +75,13 @@ public class BigDataProjectConfig {
     @Bean(name = "warehouseLocation")
     public String getWarehouseLocation() { return this.warehouseLocation; }
 
-    @Bean(name = "mongoDBHost")
-    public String getMongoDBHost() { return this.mongoDBHost; }
-
-    @Bean(name = "mongoClient")
-    public MongoClient getMongoClient(String mongoDBHost, String mongoDBDatabase, String mongoDBUsername, String mongoDBPassword) {
-        String connectionString = "mongodb://" + mongoDBHost + "/" + mongoDBDatabase;
-
-        return MongoClients.create(MongoClientSettings.builder()
-                .applyConnectionString(new ConnectionString(connectionString))
-                .retryWrites(true)
-                .build());
+    @Bean(name = "hiveDataSource")
+    public DataSource getHiveDataSource(String jdbcHiveConnectionString) {
+        return DataSourceBuilder.create().url(jdbcHiveConnectionString)
+                .username("hive")
+                .password("hive")
+                .driverClassName("org.apache.hive.jdbc.HiveDriver")
+                .build();
     }
 
     @Bean
@@ -137,29 +95,9 @@ public class BigDataProjectConfig {
         return new AWSStaticCredentialsProvider(awsCredentials);
     }
 
-    @Bean
-    public SparkSession sparkSession(String warehouseLocation, String jdbcHiveConnectionString) {
-        return SparkSession.builder()
-                .appName("Spark Hive Collector")
-                .master("local")
-                .config("spark.sql.hive.hiveServer2.jdbc.url", jdbcHiveConnectionString)
-                .config("spark.sql.warehouse.dir", warehouseLocation)
-                .enableHiveSupport()
-                .getOrCreate();
-    }
-
     @Bean(name = "awsS3Bucket")
     public String getAWSS3Bucket() {
         return awsS3Bucket;
     }
-
-    /*
-    @Bean
-    public void monProgramme(AmazonS3ClientServiceImpl amazons3Client, HiveClientServiceImpl hiveClient) {
-        //hiveCollector.getAmazonS3();
-        //hiveClient.getDataFromHive();
-        // Une fois les champs récupérés on va transformer ça en csv
-    }
-    */
 
 }
